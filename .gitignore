@@ -1,0 +1,6 @@
+filings/
+*.db
+*.class
+out/
+.DS_Store
+.freebuff/
