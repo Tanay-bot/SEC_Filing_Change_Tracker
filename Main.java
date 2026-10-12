@@ -89,6 +89,9 @@ public class Main {
                         + reportDates.get(i) + "', '" + accession + "', '" + filePath + "', '" + new java.util.Date() + "')");
 
                 System.out.println(filePath + " - " + html.length() + " chars");
+
+                String plainText = stripTags(html);
+                System.out.println("  plain text is " + plainText.length() + " chars");
             }
         }
 
@@ -98,6 +101,12 @@ public class Main {
         }
 
         System.out.println("done");
+    }
+
+    static String stripTags(String html) {
+        String withoutTags = html.replaceAll("<[^>]*>", " ");
+        String withoutExtraSpaces = withoutTags.replaceAll("\\s+", " ");
+        return withoutExtraSpaces.trim();
     }
 
     static String get(String url) throws Exception {
