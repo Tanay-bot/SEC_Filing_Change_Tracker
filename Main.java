@@ -104,6 +104,18 @@ public class Main {
                     }
                     System.out.println("  " + preview);
                 }
+
+                String mda = getItem7(plainText);
+                if (mda == null) {
+                    System.out.println("  no item 7 in this one");
+                } else {
+                    System.out.println("  item 7 is " + mda.length() + " chars");
+                    String mdaPreview = mda;
+                    if (mdaPreview.length() > 400) {
+                        mdaPreview = mdaPreview.substring(0, 400);
+                    }
+                    System.out.println("  " + mdaPreview);
+                }
             }
         }
 
@@ -125,6 +137,24 @@ public class Main {
         int end = text.indexOf("Item 1B", start);
         if (end == -1) {
             end = text.indexOf("Item 2", start);
+        }
+        if (end == -1) {
+            end = text.length();
+        }
+
+        return text.substring(start, end);
+    }
+
+    // item 7 is the md&a in a 10-K
+    static String getItem7(String text) {
+        int start = text.indexOf("Item 7");
+        if (start == -1) {
+            return null;
+        }
+
+        int end = text.indexOf("Item 7A", start);
+        if (end == -1) {
+            end = text.indexOf("Item 8", start);
         }
         if (end == -1) {
             end = text.length();
