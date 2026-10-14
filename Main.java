@@ -92,6 +92,18 @@ public class Main {
 
                 String plainText = stripTags(html);
                 System.out.println("  plain text is " + plainText.length() + " chars");
+
+                String riskFactors = getItem1A(plainText);
+                if (riskFactors == null) {
+                    System.out.println("  no item 1a in this one");
+                } else {
+                    System.out.println("  item 1a is " + riskFactors.length() + " chars");
+                    String preview = riskFactors;
+                    if (preview.length() > 400) {
+                        preview = preview.substring(0, 400);
+                    }
+                    System.out.println("  " + preview);
+                }
             }
         }
 
@@ -101,6 +113,24 @@ public class Main {
         }
 
         System.out.println("done");
+    }
+
+    // grab the risk factors section, item 1a runs until the next item
+    static String getItem1A(String text) {
+        int start = text.indexOf("Item 1A");
+        if (start == -1) {
+            return null;
+        }
+
+        int end = text.indexOf("Item 1B", start);
+        if (end == -1) {
+            end = text.indexOf("Item 2", start);
+        }
+        if (end == -1) {
+            end = text.length();
+        }
+
+        return text.substring(start, end);
     }
 
     static String stripTags(String html) {
