@@ -164,9 +164,23 @@ public class Main {
     }
 
     static String stripTags(String html) {
-        String withoutTags = html.replaceAll("<[^>]*>", " ");
+        String noScripts = html.replaceAll("(?s)<script.*?</script>", " ");
+        String noStyles = noScripts.replaceAll("(?s)<style.*?</style>", " ");
+        String withoutTags = noStyles.replaceAll("<[^>]*>", " ");
         String withoutExtraSpaces = withoutTags.replaceAll("\\s+", " ");
-        return withoutExtraSpaces.trim();
+        return decodeEntities(withoutExtraSpaces).trim();
+    }
+
+    static String decodeEntities(String text) {
+        String out = text.replaceFirst("&#160;", " ");
+        out = out.replaceFirst("&nbsp;", " ");
+        out = out.replaceFirst("&#8217;", "'");
+        out = out.replaceFirst("&#8220;", "\"");
+        out = out.replaceFirst("&#8221;", "\"");
+        out = out.replaceFirst("&#39;", "'");
+        out = out.replaceFirst("&amp;", "&");
+        out = out.replaceFirst("&quot;", "\"");
+        return out;
     }
 
     static String get(String url) throws Exception {
