@@ -15,6 +15,10 @@ public class Main {
     static String[] formsWeWant = { "10-Q", "10-K" };
     static int filingsPerCompany = 3;
     static String outDir = "filings";
+    static String riskHeading = "Risk Factors";
+
+    // left "management's" off the front, the apostrophe is an entity in some filings and not in others
+    static String mdaHeading = "Discussion and Analysis of Financial Condition and Results of Operations";
 
     public static void main(String[] args) throws Exception {
 
@@ -95,7 +99,7 @@ public class Main {
                     String plainText = stripTags(html);
                     System.out.println("  plain text is " + plainText.length() + " chars");
 
-                    String riskFactors = getItem1A(plainText);
+                    String riskFactors = getSection(plainText, riskHeading);
                     if (riskFactors == null) {
                         System.out.println("  no item 1a in this one");
                     } else {
@@ -107,11 +111,11 @@ public class Main {
                         System.out.println("  " + preview);
                     }
 
-                    String mda = getItem7(plainText);
+                    String mda = getSection(plainText, mdaHeading);
                     if (mda == null) {
-                        System.out.println("  no item 7 in this one");
-                    } else {
-                        System.out.println("  item 7 is " + mda.length() + " chars");
+                    System.out.println("  no md&a in this one");
+                } else {
+                    System.out.println("  md&a is " + mda.length() + " chars");
                         String mdaPreview = mda;
                         if (mdaPreview.length() > 400) {
                             mdaPreview = mdaPreview.substring(0, 400);
@@ -133,7 +137,7 @@ public class Main {
         System.out.println("done");
     }
 
-    // grab the risk factors section, item 1a runs until the next item
+    /*
     static String getItem1A(String text) {
         int start = text.indexOf("Item 1A");
         if (start == -1) {
@@ -151,7 +155,6 @@ public class Main {
         return text.substring(start, end);
     }
 
-    // item 7 is the md&a in a 10-K
     static String getItem7(String text) {
         int start = text.indexOf("Item 7");
         if (start == -1) {
@@ -168,13 +171,88 @@ public class Main {
 
         return text.substring(start, end);
     }
+    */
+
+    // the item numbers are not the same in a 10-Q and a 10-K, so look for the heading text instead
+    static String getSection(String text, String heading) {
+        String lower = text.toLowerCase();
+        String lowerHeading = heading.toLowerCase();
+
+        int from = 0;
+        while (true) {
+            int start = lower.indexOf(lowerHeading, from);
+            if (start == -1) {
+                return null;
+            }
+
+            int after = start + heading.length();
+            while (after < text.length() && text.charAt(after) == ' ') {
+                after++;
+            }
+
+            // in the table of contents the heading is followed by a page number, the real one is followed by text
+            if (after < text.length() && Character.isUpperCase(text.charAt(after))) {
+                int end = nextItemHeading(text, after);
+                if (end == -1) {
+                    end = text.length();
+                }
+                return text.substring(start, end);
+            }
+
+            from = start + heading.length();
+        }
+    }
+
+    // the next real heading like "Item 1B.", not a mention of item 2 in the middle of a sentence
+    static int nextItemHeading(String text, int from) {
+        String lower = text.toLowerCase();
+        int p = from;
+        while (true) {
+            // some filings put the headings in caps so this has to be case insensitive too
+            int at = lower.indexOf("item ", p);
+            if (at == -1) {
+                return -1;
+            }
+
+            int i = at + 5;
+            int digits = 0;
+            while (i < text.length() && Character.isDigit(text.charAt(i))) {
+                i++;
+                digits++;
+            }
+            if (digits > 0 && i < text.length() && Character.isUpperCase(text.charAt(i))) {
+                i++;
+            }
+
+            // a heading is not in the middle of a quote, like "Item 8. Financial Statements" over there
+            boolean quoted = at > 0 && text.charAt(at - 1) == '"';
+
+            // "refer to Part II, Item 7." is talking about another section, not starting one
+            String before = text.substring(Math.max(0, at - 20), at);
+            boolean partTwo = before.contains("Part ");
+
+            // and "set forth in Item 1A. \"Risk Factors\"" has the title in quotes, a heading does not
+            int afterDot = i + 1;
+            while (afterDot < text.length() && text.charAt(afterDot) == ' ') {
+                afterDot++;
+            }
+            boolean titleInQuotes = afterDot < text.length() && text.charAt(afterDot) == '"';
+
+            if (!quoted && !partTwo && !titleInQuotes && digits > 0 && i < text.length() && text.charAt(i) == '.') {
+                return at;
+            }
+
+            p = at + 5;
+        }
+    }
 
     static String stripTags(String html) {
         String noScripts = html.replaceAll("(?s)<script.*?</script>", " ");
         String noStyles = noScripts.replaceAll("(?s)<style.*?</style>", " ");
         String withoutTags = noStyles.replaceAll("<[^>]*>", " ");
-        String withoutExtraSpaces = withoutTags.replaceAll("\\s+", " ");
-        return decodeEntities(withoutExtraSpaces).trim();
+        String decoded = decodeEntities(withoutTags);
+        String withoutExtraSpaces = decoded.replaceAll("\\s+", " ");
+        return withoutExtraSpaces.trim();
     }
 
     static String decodeEntities(String text) {
