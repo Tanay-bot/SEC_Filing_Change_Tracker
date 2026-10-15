@@ -67,54 +67,60 @@ public class Main {
 
             for (int c = 0; c < chosen.size(); c++) {
 
-                int i = chosen.get(c);
-                String accession = accessions.get(i);
-                String noDashes = accession.replace("-", "");
+                try {
 
-                // edgar file paths want the cik with no leading zeros
-                String url = "https://www.sec.gov/Archives/edgar/data/" + cik.replaceFirst("^0+", "")
-                        + "/" + noDashes + "/" + documents.get(i);
+                    int i = chosen.get(c);
+                    String accession = accessions.get(i);
+                    String noDashes = accession.replace("-", "");
 
-                String filePath = outDir + "/" + ticker + "-" + noDashes + ".htm";
+                    // edgar file paths want the cik with no leading zeros
+                    String url = "https://www.sec.gov/Archives/edgar/data/" + cik.replaceFirst("^0+", "")
+                            + "/" + noDashes + "/" + documents.get(i);
 
-                Thread.sleep(200);
+                    String filePath = outDir + "/" + ticker + "-" + noDashes + ".htm";
 
-                String html = get(url);
-                FileWriter fw = new FileWriter(filePath);
-                fw.write(html);
-                fw.close();
+                    Thread.sleep(200);
 
-                st.execute("INSERT INTO filings (ticker, cik, form, filingDate, reportDate, accession, filePath, downloadedAt) VALUES ('"
-                        + ticker + "', '" + cik + "', '" + formList.get(i) + "', '" + filingDates.get(i) + "', '"
-                        + reportDates.get(i) + "', '" + accession + "', '" + filePath + "', '" + new java.util.Date() + "')");
+                    String html = get(url);
+                    FileWriter fw = new FileWriter(filePath);
+                    fw.write(html);
+                    fw.close();
 
-                System.out.println(filePath + " - " + html.length() + " chars");
+                    st.execute("INSERT INTO filings (ticker, cik, form, filingDate, reportDate, accession, filePath, downloadedAt) VALUES ('"
+                            + ticker + "', '" + cik + "', '" + formList.get(i) + "', '" + filingDates.get(i) + "', '"
+                            + reportDates.get(i) + "', '" + accession + "', '" + filePath + "', '" + new java.util.Date() + "')");
 
-                String plainText = stripTags(html);
-                System.out.println("  plain text is " + plainText.length() + " chars");
+                    System.out.println(filePath + " - " + html.length() + " chars");
 
-                String riskFactors = getItem1A(plainText);
-                if (riskFactors == null) {
-                    System.out.println("  no item 1a in this one");
-                } else {
-                    System.out.println("  item 1a is " + riskFactors.length() + " chars");
-                    String preview = riskFactors;
-                    if (preview.length() > 400) {
-                        preview = preview.substring(0, 400);
+                    String plainText = stripTags(html);
+                    System.out.println("  plain text is " + plainText.length() + " chars");
+
+                    String riskFactors = getItem1A(plainText);
+                    if (riskFactors == null) {
+                        System.out.println("  no item 1a in this one");
+                    } else {
+                        System.out.println("  item 1a is " + riskFactors.length() + " chars");
+                        String preview = riskFactors;
+                        if (preview.length() > 400) {
+                            preview = preview.substring(0, 400);
+                        }
+                        System.out.println("  " + preview);
                     }
-                    System.out.println("  " + preview);
-                }
 
-                String mda = getItem7(plainText);
-                if (mda == null) {
-                    System.out.println("  no item 7 in this one");
-                } else {
-                    System.out.println("  item 7 is " + mda.length() + " chars");
-                    String mdaPreview = mda;
-                    if (mdaPreview.length() > 400) {
-                        mdaPreview = mdaPreview.substring(0, 400);
+                    String mda = getItem7(plainText);
+                    if (mda == null) {
+                        System.out.println("  no item 7 in this one");
+                    } else {
+                        System.out.println("  item 7 is " + mda.length() + " chars");
+                        String mdaPreview = mda;
+                        if (mdaPreview.length() > 400) {
+                            mdaPreview = mdaPreview.substring(0, 400);
+                        }
+                        System.out.println("  " + mdaPreview);
                     }
-                    System.out.println("  " + mdaPreview);
+
+                } catch (Exception e) {
+                    System.out.println("one of the filings did not work, moving on: " + e);
                 }
             }
         }
@@ -172,14 +178,14 @@ public class Main {
     }
 
     static String decodeEntities(String text) {
-        String out = text.replaceFirst("&#160;", " ");
-        out = out.replaceFirst("&nbsp;", " ");
-        out = out.replaceFirst("&#8217;", "'");
-        out = out.replaceFirst("&#8220;", "\"");
-        out = out.replaceFirst("&#8221;", "\"");
-        out = out.replaceFirst("&#39;", "'");
-        out = out.replaceFirst("&amp;", "&");
-        out = out.replaceFirst("&quot;", "\"");
+        String out = text.replaceAll("&#160;", " ");
+        out = out.replaceAll("&nbsp;", " ");
+        out = out.replaceAll("&#8217;", "'");
+        out = out.replaceAll("&#8220;", "\"");
+        out = out.replaceAll("&#8221;", "\"");
+        out = out.replaceAll("&#39;", "'");
+        out = out.replaceAll("&amp;", "&");
+        out = out.replaceAll("&quot;", "\"");
         return out;
     }
 
